@@ -243,7 +243,7 @@ router.get("^", async (req, params) => {
   }
 });
 
-function main() {
+async function main() {
   /* Create the server! */
   const server = serve({
     port: 7777,
