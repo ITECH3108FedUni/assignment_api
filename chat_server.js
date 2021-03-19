@@ -11,16 +11,6 @@ import { getHighlightedJson, getIndexer } from "./index.js";
 
 import { apiError, TinyRouter } from "./router.js";
 
-/*
-import { createHash } from "https://deno.land/std@0.90.0/hash/mod.ts";
-
-function genUserToken(user) {
-  const hash = createHash('sha1');
-  hash.update(`s3cret${user}`);
-  return hash.toString();
-}
-*/
-
 const version = "20/05";
 
 /* Load a "database". */
@@ -173,41 +163,6 @@ router.post("^/api/topics/(\\d+)/posts/?$", (req, params) => {
   "user": "The username of the user posting.",
   "text": "The content of the post. A string.",
 });
-
-/* Create a post within a topic */
-/*
-router.post("^/api/login/?$", (req, params) => {
-  const loginUser = req.json.user.trim();
-  const user = database.users.find((u) => u.username == loginUser);
-  if (!user) {
-    return apiError(
-      {
-        error: `No matching user`,
-      },
-      Status.Unauthorized,
-    );
-  }
-
-  if(req.json.password !== "password") {
-    return apiError(
-      {
-        error: `Incorrect password`,
-      },
-      Status.Unauthorized,
-    );
-  }
-  
-  const token = genUserToken(loginUser);
-  
-  return {
-    body: { token },
-    status: Status.OK,
-  };
-}, {
-  "user": "The username of the user posting.",
-  "password": "The string 'password'."
-});
-*/
 
 /* Delete a topic */
 router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
