@@ -162,14 +162,20 @@ export class TinyRouter {
         } else {
           const headers = new Headers();
           const status = 200;
-          res = {"body": res, headers, status};
+          res = { "body": res, headers, status };
         }
 
         /* Add CORS headers */
         res.headers.set("Access-Control-Allow-Origin", "*");
         res.headers.set("Access-Control-Max-Age", "86400");
-        res.headers.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
-        res.headers.set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Origin");
+        res.headers.set(
+          "Access-Control-Allow-Methods",
+          "GET, PUT, POST, DELETE",
+        );
+        res.headers.set(
+          "Access-Control-Allow-Headers",
+          "Accept, Authorization, Content-Type, Origin",
+        );
 
         return res;
       }

@@ -15,7 +15,7 @@ function connect() {
     document.getElementById("database_contents").innerHTML = event.data;
   });
 
-  socket.addEventListener('open', () => {
+  socket.addEventListener("open", () => {
     timeout = defaultTimeout;
   });
 
