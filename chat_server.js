@@ -11,6 +11,16 @@ import { getHighlightedJson, getIndexer } from "./index.js";
 
 import { apiError, TinyRouter } from "./router.js";
 
+/*
+import { createHash } from "https://deno.land/std@0.90.0/hash/mod.ts";
+
+function genUserToken(user) {
+  const hash = createHash('sha1');
+  hash.update(`s3cret${user}`);
+  return hash.toString();
+}
+*/
+
 const version = "20/05";
 
 /* Load a "database". */
@@ -54,7 +64,10 @@ router.get("^/api/topics/(\\d+)/posts/?$", (_, params) => {
       Status.NotFound,
     );
   }
-  return topic.posts;
+  return topic.posts.map((post) => ({
+    ...post,
+    name: database.users.find((u) => u.username === post.user).name,
+  }));
 });
 
 /* Return all the users */
@@ -148,6 +161,7 @@ router.post("^/api/topics/(\\d+)/posts/?$", (req, params) => {
   const newPost = {
     title: req.json.text,
     user: req.json.user,
+    name: user.name,
   };
   topic.posts.push(newPost);
 
@@ -159,6 +173,41 @@ router.post("^/api/topics/(\\d+)/posts/?$", (req, params) => {
   "user": "The username of the user posting.",
   "text": "The content of the post. A string.",
 });
+
+/* Create a post within a topic */
+/*
+router.post("^/api/login/?$", (req, params) => {
+  const loginUser = req.json.user.trim();
+  const user = database.users.find((u) => u.username == loginUser);
+  if (!user) {
+    return apiError(
+      {
+        error: `No matching user`,
+      },
+      Status.Unauthorized,
+    );
+  }
+
+  if(req.json.password !== "password") {
+    return apiError(
+      {
+        error: `Incorrect password`,
+      },
+      Status.Unauthorized,
+    );
+  }
+  
+  const token = genUserToken(loginUser);
+  
+  return {
+    body: { token },
+    status: Status.OK,
+  };
+}, {
+  "user": "The username of the user posting.",
+  "password": "The string 'password'."
+});
+*/
 
 /* Delete a topic */
 router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
@@ -184,7 +233,6 @@ router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
     body: "",
     status: Status.NoContent,
   };
-  
 }, {
   "user": "The username of the logged-in user. " +
     "Must match the username of the topic creator",
@@ -211,7 +259,6 @@ function handleWs(req) {
         if (isWebSocketCloseEvent(ev)) delete wsClients[id];
       }
     } catch (err) {
-
       console.error(`WebSocket failed: ${err}`);
       delete wsClients[id];
 
@@ -221,7 +268,6 @@ function handleWs(req) {
         } catch (_) {
           // do nothing
         }
-        
       }
     }
   });
@@ -232,10 +278,9 @@ async function postUpdate() {
   for (const id in wsClients) {
     try {
       await wsClients[id].send(json);
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
-    
   }
 }
 
