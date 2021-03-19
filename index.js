@@ -71,6 +71,7 @@ export function getIndexer(router, database) {
           WebSocket stays connected!) 
           -->
           <head><title>ITECH3108 Assignment</title>
+          <meta charset="utf-8">
           <link rel="stylesheet" href="style.css">
           <script src="/update.js" defer></script>
           </head>
