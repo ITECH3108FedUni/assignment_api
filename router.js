@@ -19,7 +19,10 @@ JSON.stringify and set the content-type header automatically.
 
 Handlers can return a string, a response object (with a body and optionally a
 status and/or content-type key) or any other object which will be encoded as
-JSON */
+JSON.
+
+It will also allow access from literally any origin.
+*/
 
 export class TinyRouter {
   constructor(postUpdate) {
@@ -157,8 +160,17 @@ export class TinyRouter {
             delete res["content-type"];
           }
         } else {
-          res.body = res;
+          const headers = new Headers();
+          const status = 200;
+          res = {"body": res, headers, status};
         }
+
+        /* Add CORS headers */
+        res.headers.set("Access-Control-Allow-Origin", "*");
+        res.headers.set("Access-Control-Max-Age", "86400");
+        res.headers.set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
+        res.headers.set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Origin");
+
         return res;
       }
     }

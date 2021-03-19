@@ -177,16 +177,20 @@ router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
       database.topics = database.topics.filter(
         (t) => (t.id !== topic.id),
       );
-      return {
-        body: "",
-        status: Status.NoContent,
-      };
     }
   }
+
+  return {
+    body: "",
+    status: Status.NoContent,
+  };
+  
 }, {
   "user": "The username of the logged-in user. " +
     "Must match the username of the topic creator",
 });
+
+router.add("OPTIONS", "^", () => "");
 
 const wsClients = {};
 let count = 0;
@@ -207,10 +211,17 @@ function handleWs(req) {
         if (isWebSocketCloseEvent(ev)) delete wsClients[id];
       }
     } catch (err) {
+
       console.error(`WebSocket failed: ${err}`);
       delete wsClients[id];
+
       if (!socket.isClosed) {
-        await socket.close(1000).catch(console.error);
+        try {
+          await socket.close(1000).catch(console.error);
+        } catch (_) {
+          // do nothing
+        }
+        
       }
     }
   });
@@ -219,7 +230,12 @@ function handleWs(req) {
 async function postUpdate() {
   const json = getHighlightedJson(database);
   for (const id in wsClients) {
-    await wsClients[id].send(json);
+    try {
+      await wsClients[id].send(json);
+    } catch(err) {
+      console.error(err);
+    }
+    
   }
 }
 
@@ -248,7 +264,7 @@ async function main() {
   const server = serve({
     port: 7777,
   });
-  console.log("http://localhost:7777/");
+  console.log("Connect to http://localhost:7777/");
 
   /* Handle incoming requests */
   for await (const req of server) {
@@ -257,7 +273,7 @@ async function main() {
       handleWs(req);
     } else {
       try {
-        req.respond(await router.handle(req));
+        await req.respond(await router.handle(req));
       } catch (err) {
         console.error(`Error: ${err.message}`);
       }
