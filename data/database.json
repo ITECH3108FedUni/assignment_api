@@ -7,6 +7,7 @@
   "topics": [
     {
       "title": "What do you want to do with your life?",
+      "user": "alfred",
       "id": 1,
       "posts": [
         {
@@ -25,6 +26,7 @@
     },
     {
       "title": "Have you ever found money on the road?",
+      "user": "cynthia",
       "id": 2,
       "posts": [
         {

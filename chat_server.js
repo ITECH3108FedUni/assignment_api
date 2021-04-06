@@ -176,12 +176,10 @@ router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
     );
   }
 
-  if (topic.posts.length > 0) {
-    if (topic.posts[0].user === req.json.user) {
-      database.topics = database.topics.filter(
-        (t) => (t.id !== topic.id),
-      );
-    }
+  if (topic.user === req.json.user) {
+    database.topics = database.topics.filter(
+      (t) => (t.id !== topic.id),
+    );
   }
 
   return {
