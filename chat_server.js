@@ -111,7 +111,10 @@ router.post("^/api/topics/?$", (req, params) => {
   const newTopic = {
     title: req.json.title,
     id: database.topics.map((t) => t.id).reduce((a, b) => Math.max(a, b)) + 1,
-    posts: req.json.text,
+    posts: [{
+      text: req.json.text,
+      user: req.json.user,
+    }],
     user: req.json.user,
   };
   database.topics.push(newTopic);
@@ -151,7 +154,6 @@ router.post("^/api/topics/(\\d+)/posts/?$", (req, params) => {
   const newPost = {
     title: req.json.text,
     user: req.json.user,
-    name: user.name,
   };
   topic.posts.push(newPost);
 
