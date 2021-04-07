@@ -72,33 +72,139 @@ export function getIndexer(router, database) {
           -->
           <head><title>ITECH3108 Assignment</title>
           <meta charset="utf-8">
-          <link rel="stylesheet" href="style.css">
-          <script src="/update.js" defer></script>
+          <style>
+            body {
+              font-family: sans-serif;
+            }
+            
+            /* layout */
+            div.content {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            
+            div.content > div {
+                flex: 1 0;
+                margin: 0 1rem;
+            }
+            
+            table {
+              border-spacing: 0;
+              margin: 1rem;
+            }
+            td {
+              color: #333;
+              font-family: consolas, fixed-width;
+            }
+            dl {
+              margin: 0;
+            }
+            dd {
+              font-family: sans-serif;
+            }
+            
+            .method {
+              font-weight: 700;
+            }
+            .method-GET {
+              color: #393;
+            }
+            .method-POST {
+              color: #660;
+            }
+            .method-DELETE {
+              color: #900;
+            }
+            .endpoint {
+              font-weight: 300;
+              white-space:nowrap;
+            }
+            .endpoint em {
+              color: #339;
+              font-weight: 700;
+              font-style: normal;
+            }
+            th,
+            td {
+              text-align: left;
+              border-bottom: 1px solid #666;
+              padding: 0.2rem 1rem;
+              margin: 0;
+              vertical-align: top;
+            }
+            th:first-child,
+            td:first-child {
+              text-align: center;
+            }
+            span.key {
+              color: #339;
+            }
+            span.value {
+              color: #393;
+            }
+          
+          </style>
+          
           </head>
           <body>
               <h1>ITECH3108 Assignment 1</h1>
               <div class="content">
-              <div id="endpoints">
-              <h3>API endpoints:</h1>
-              <p>URL components listed in bold and blue below are configurable
-              - replace them with your values (as in the example column)</p>
-              <table>
-              <tr>
-                  <th>Method</th>
-                  <th>Endpoint</th>
-                  <th>Example</th>
-                  <th>Required JSON parameters</th>
-              </tr>
-              ${routeFormats}
-              </table>
+                <div id="endpoints">
+                  <h3>API endpoints:</h1>
+                  <p>URL components listed in bold and blue below are configurable
+                  - replace them with your values (as in the example column)</p>
+                  <table>
+                  <tr>
+                      <th>Method</th>
+                      <th>Endpoint</th>
+                      <th>Example</th>
+                      <th>Required JSON parameters</th>
+                  </tr>
+                  ${routeFormats}
+                  </table>
+                </div>
+    
+                <div id="contents">
+                  <h3>Current contents of database</h3>
+                  <pre id="database_contents">${getHighlightedJson(database)}</pre>
+                </div>
               </div>
-  
-              <div id="contents">
-              <h3>Current contents of database</h3>
-              <pre id="database_contents">${getHighlightedJson(database)}</pre>
-              </div>
-              </div>
-  
+              <script>/*
+              Hook up a WebSocket to keep the database refreshed without timeouts,
+              and without polluting the developer tools with lots of REST API calls.
+              
+              You don't need to understand what this is doing to do the assignment.
+              */
+              const defaultTimeout = 5000;
+              const maxTimeout = 20000;
+              let timeout = 5000;
+              
+              function connect() {
+                const socket = new WebSocket("ws://" + window.location.host + "/ws");
+              
+                socket.addEventListener("message", (event) => {
+                  document.getElementById("database_contents").innerHTML = event.data;
+                });
+              
+                socket.addEventListener("open", () => {
+                  timeout = defaultTimeout;
+                });
+              
+                socket.addEventListener("close", () => {
+                  // reconnect
+                  setTimeout(connect, timeout);
+                });
+              
+                socket.addEventListener("error", (event) => {
+                  console.log("Error encountered:", event);
+                  socket.close();
+                  setTimeout(connect, timeout);
+                  timeout = Math.min(timeout * 1.5, maxTimeout);
+                });
+              }
+              
+              connect();
+              </script>
           </body>
       </html>`;
 
