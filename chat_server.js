@@ -202,7 +202,7 @@ router.post("^/api/topics/(\\d+)/posts/?$", (req, params) => {
   }
 
   const newPost = {
-    title: req.json.text,
+    text: req.json.text,
     user: req.json.user,
   };
   topic.posts.push(newPost);
