@@ -55,7 +55,7 @@ export class TinyRouter {
   }
 
   /* Short-hand methods to respond to GET, POST, PUT, DELETE */
-  get(re, action) {
+  get(re, action, requiredFields) {
     return this.add("GET", re, action);
   }
   post(re, action, requiredFields) {

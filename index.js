@@ -21,11 +21,12 @@ export function getIndexer(router, database) {
           .replaceAll("(\\d+)", "{id}")
           .replaceAll("(\\w+)", "{user}");
 
+        let id = 1;
         return {
           ...route,
           path: path,
           example_url: path
-            .replaceAll("{id}", "1")
+            .replaceAll("{id}", (_) => id++)
             .replaceAll("{user}", database.users[0].username),
         };
       })
@@ -38,6 +39,9 @@ export function getIndexer(router, database) {
             .join("\n");
           paramtext = `<dl>${paramtext}</dl>`;
         }
+        if(route.action.description) {
+          paramtext += `<small>${route.action.description}</small>`;
+        }
 
         return { route, paramtext };
       })
@@ -47,7 +51,7 @@ export function getIndexer(router, database) {
               <td class="method method-${route.method}">${route.method}</td>
               <td class="endpoint">${
             route.path.replaceAll(
-              /{(.*)}/g,
+              /{(.*?)}/g,
               "<em>$1</em>",
             )
           }</td>
@@ -158,7 +162,7 @@ export function getIndexer(router, database) {
                       <th>Method</th>
                       <th>Endpoint</th>
                       <th>Example</th>
-                      <th>Required JSON parameters</th>
+                      <th>Notes / JSON parameters</th>
                   </tr>
                   ${routeFormats}
                   </table>
