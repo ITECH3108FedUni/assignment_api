@@ -3,11 +3,28 @@ import { Status } from "https://deno.land/std@0.90.0/http/http_status.ts";
 // Used to decode the body of POST & PUT requests
 const decoder = new TextDecoder();
 
+function addCORS(headers) {  
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Max-Age", "86400");
+  headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, PUT, POST, DELETE",
+    );
+  headers.set(
+      "Access-Control-Allow-Headers",
+      "Accept, Authorization, Content-Type, Origin",
+    );
+}
+
 export function apiError(body, status) {
+  const headers = new Headers();
+  addCORS(headers);
+  headers.set('Content-Type', "application/json");
+  
   return {
-    body: JSON.stringify(body),
+    body: JSON.stringify({error: body}),
     status: status,
-    "content-type": "application/json",
+    headers: headers
   };
 }
 
@@ -74,7 +91,7 @@ export class TinyRouter {
   */
   async handle(req) {
     /* If the client claims to be sending json, then parse it */
-    if (req.headers.get("content-type") == "application/json") {
+    if (req.headers.get("content-type").startsWith("application/json")) {
       let body = await Deno.readAll(req.body);
       try {
         if (body.length) {
@@ -82,9 +99,7 @@ export class TinyRouter {
           req.json = body;
         }
       } catch (e) {
-        return apiError({
-          error: `Malformed JSON in your request. ${e.message}`,
-        }, Status.BadRequest);
+        return apiError(`Malformed JSON in your request. ${e.message}`, Status.BadRequest);
       }
     }
 
@@ -98,18 +113,13 @@ export class TinyRouter {
         if (route.requiredFields) {
           // If the handler requires certain fields, make sure we have json
           if (!req.json) {
-            return apiError({
-              error: `This endpoint requires a JSON-encoded body. ` +
-                `Did you remember to set the content type to application/json?`,
-            }, Status.BadRequest);
+            return apiError(`This endpoint requires a JSON-encoded body. ` +
+                `Did you remember to set the content type to application/json?`, Status.BadRequest);
           }
 
           for (const k in route.requiredFields) {
             if (!(k in req.json)) {
-              return apiError(
-                {
-                  error: `Missing information required in request: ${k}`,
-                },
+              return apiError(`Missing information required in request: ${k}`,
                 Status.BadRequest,
               );
             }
@@ -166,16 +176,7 @@ export class TinyRouter {
         }
 
         /* Add CORS headers */
-        res.headers.set("Access-Control-Allow-Origin", "*");
-        res.headers.set("Access-Control-Max-Age", "86400");
-        res.headers.set(
-          "Access-Control-Allow-Methods",
-          "GET, PUT, POST, DELETE",
-        );
-        res.headers.set(
-          "Access-Control-Allow-Headers",
-          "Accept, Authorization, Content-Type, Origin",
-        );
+        addCORS(res.headers);
 
         return res;
       }
