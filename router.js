@@ -91,7 +91,7 @@ export class TinyRouter {
   */
   async handle(req) {
     /* If the client claims to be sending json, then parse it */
-    if (req.headers.get("content-type").startsWith("application/json")) {
+    if (req.headers.get("content-type") && req.headers.get('content-type').startsWith("application/json")) {
       let body = await Deno.readAll(req.body);
       try {
         if (body.length) {
