@@ -95,10 +95,7 @@ router.get(
 router.get("^/api/threads/(\\d+)/?$", (_, params) => {
   const thread = database.threads.find((t) => t.id == params[0]);
   if (!thread) {
-    return apiError(
-      {
-        error: `No matching thread ${params[0]}`,
-      },
+    return apiError(`No matching thread ${params[0]}`,
       Status.NotFound,
     );
   }
@@ -109,10 +106,7 @@ router.get("^/api/threads/(\\d+)/?$", (_, params) => {
 router.get("^/api/threads/(\\d+)/posts/?$", (_, params) => {
   const thread = database.threads.find((t) => t.id == params[0]);
   if (!thread) {
-    return apiError(
-      {
-        error: `No matching thread ${params[0]}`,
-      },
+    return apiError(`No matching thread ${params[0]}`,
       Status.NotFound,
     );
   }
@@ -125,19 +119,14 @@ router.get("^/api/threads/(\\d+)/posts/?$", (_, params) => {
 const get_thread_posts = (_, params) => {
   const thread = database.threads.find((t) => t.id == params[0]);
   if (!thread) {
-    return apiError(
-      {
-        error: `No matching thread ${params[0]}`,
-      },
+    return apiError(`No matching thread ${params[0]}`,
       Status.NotFound,
     );
   }
   const post = thread.posts[params[1]-1];
 
   if(!post) {
-    return apiError( {
-        error: `No matching post ${params[1]} in thread ${params[0]}`,
-      }, 
+    return apiError( `No matching post ${params[1]} in thread ${params[0]}`, 
       Status.NotFound,
     );
   }
@@ -160,10 +149,7 @@ router.get("^/api/users/?$", () => database.users);
 router.get("^/api/users/(\\w+)/?$", (_, params) => {
   const user = database.users.find((u) => u.username == params[0]);
   if (!user) {
-    return apiError(
-      {
-        error: `No matching user ${params[0]}`,
-      },
+    return apiError(`No matching user ${params[0]}`,
       Status.NotFound,
     );
   }
@@ -174,10 +160,7 @@ router.get("^/api/users/(\\w+)/?$", (_, params) => {
 router.get("^/api/users/(\\w+)/threads/?$", (req, params) => {
   const user = database.users.find((u) => u.username == params[0]);
   if (!user) {
-    return apiError(
-      {
-        error: `No matching user ${params[0]}`,
-      },
+    return apiError(`No matching user ${params[0]}`,
       Status.NotFound,
     );
   }
@@ -193,10 +176,7 @@ router.get("^/api/users/(\\w+)/threads/?$", (req, params) => {
 router.post("^/api/threads/?$", (req, params) => {
   const user = database.users.find((u) => u.username == req.json.user);
   if (!user) {
-    return apiError(
-      {
-        error: `No matching user ${req.json.user}`,
-      },
+    return apiError(`No matching user ${req.json.user}`,
       Status.OK,
     );
   }
@@ -229,20 +209,14 @@ router.post("^/api/threads/?$", (req, params) => {
 router.post("^/api/threads/(\\d+)/posts/?$", (req, params) => {
   const thread = database.threads.find((t) => t.id == params[0]);
   if (!thread) {
-    return apiError(
-      {
-        error: `No matching thread ${params[0]}`,
-      },
+    return apiError(`No matching thread ${params[0]}`,
       Status.NotFound,
     );
   }
 
   const user = database.users.find((u) => u.username == req.json.user);
   if (!user) {
-    return apiError(
-      {
-        error: `No matching user ${req.json.user}`,
-      },
+    return apiError(`No matching user ${req.json.user}`,
       Status.OK,
     );
   }
@@ -266,10 +240,7 @@ router.post("^/api/threads/(\\d+)/posts/?$", (req, params) => {
 router.delete("^/api/threads/(\\d+)/?$", (req, params) => {
   const thread = database.threads.find((t) => t.id == params[0]);
   if (!thread) {
-    return apiError(
-      {
-        error: `No matching thread ${params[0]}`,
-      },
+    return apiError(`No matching thread ${params[0]}`,
       Status.NotFound,
     );
   }
