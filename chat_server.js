@@ -16,62 +16,62 @@ const version = "22/05";
 /* Load a "database". */
 const databaseJSON = `{
   "users": [
-    { "username": "norman", "name": "Norman C. Lowery" },
-    { "username": "josa",   "name": "Jósa Marcsa" },
-    { "username": "amanda", "name": "Amanda Costa Rodrigues" },
-    { "username": "tiina",  "name": "Tiina Takko" },
-    { "username": "owen",   "name": "Owen Dow"}
+    { "username": "justin", "name": "Justin O. Pelais" },
+    { "username": "franc",   "name": "Francine Rogers" },
+    { "username": "del", "name": "Della Alexopoulos" },
+    { "username": "joakim",  "name": "Joakim Brodén" },
+    { "username": "marle",   "name": "Marle Downe"}
   ],
-  "threads": [
+  "questions": [
     {
-      "thread_title": "Does anybody play an instrument?",
+      "question": "What music does everyone listen to?",
       "icon": "🎸",
-      "user": "norman",
+      "user": "justin",
       "id": 1,
-      "posts": [
+      "replies": [
         {
-          "text": "I love to play guitar, anybody else?",
-          "user": "norman"
+          "text": "I love classical and spanish guitar! So much talent!",
+          "user": "justin"
         },
         {
-          "text": "Not me.",
-          "user": "amanda"
+          "text": "I don't listen to music.",
+          "user": "del"
         },
         {
-          "text": "Ok. Thanks for your contribution @amanda",
-          "user": "norman"
+          "text": "Ok. Thanks for your contribution @del",
+          "user": "justin"
         },
         {
-          "text": "I play the air drums!",
-          "user": "owen"
+          "text": "I sing in a metal band!",
+          "user": "joakim"
         }
       ]
     },
     {
-      "thread_title": "Hey everybody!",
-      "user": "josa",
+      "question": "What's on for the weekend?",
+      "user": "franc",
       "icon": "👋",
       "id": 2,
-      "posts": [
+      "replies": [
         {
-          "text": "I love making new friends!",
-          "user": "josa"
+          "text": "I'm going to a concert!",
+          "user": "franc"
         },
         {
-          "text": "Welcome @josa",
-          "user": "owen"
+          "text": "Sounds great, @franc! I have to study.",
+          "user": "marle"
         },
         {
-          "text": "Thanks Owen",
-          "user": "josa"
+          "text": "Thanks @marle! Good luck!",
+          "user": "franc"
         },
         {
-          "text": "Who invited Josa?.",
-          "user": "amanda"
+          "text": "My band has a gig. Maybe it's the same one you're going to, @franc!",
+          "user": "joakim"
         },
         {
-          "text": "@amanda be nice. Last warning.",
-          "user": "norman"
+          "text": "I'll be having chicken tacos and watching a movie with mom.",
+          "user": "justin"
         }
       ]
     }
@@ -87,60 +87,60 @@ router.get("^/?$", getIndexer(router, database));
 
 /* Routes for the API */
 router.get(
-  "^/api/threads/?$",
-  () => database.threads.map(({ posts, ...rest }) => rest),
+  "^/api/questions/?$",
+  () => database.questions.map(({ replies, ...rest }) => rest),
 );
 
-/* Return a thread with a given id */
-router.get("^/api/threads/(\\d+)/?$", (_, params) => {
-  const thread = database.threads.find((t) => t.id == params[0]);
-  if (!thread) {
-    return apiError(`No matching thread ${params[0]}`,
+/* Return a question with a given id */
+router.get("^/api/questions/(\\d+)/?$", (_, params) => {
+  const question = database.questions.find((t) => t.id == params[0]);
+  if (!question) {
+    return apiError(`No matching question ${params[0]}`,
       Status.NotFound,
     );
   }
-  return thread;
+  return question;
 });
 
-/* Return the posts for a thread with a given id */
-router.get("^/api/threads/(\\d+)/posts/?$", (_, params) => {
-  const thread = database.threads.find((t) => t.id == params[0]);
-  if (!thread) {
-    return apiError(`No matching thread ${params[0]}`,
+/* Return the replies for a question with a given id */
+router.get("^/api/questions/(\\d+)/replies/?$", (_, params) => {
+  const question = database.questions.find((t) => t.id == params[0]);
+  if (!question) {
+    return apiError(`No matching question ${params[0]}`,
       Status.NotFound,
     );
   }
-  return thread.posts.map((post) => ({
-    ...post,
-    name: database.users.find((u) => u.username === post.user).name,
+  return question.replies.map((reply) => ({
+    ...reply,
+    name: database.users.find((u) => u.username === reply.user).name,
   }));
 });
 
-const get_thread_posts = (_, params) => {
-  const thread = database.threads.find((t) => t.id == params[0]);
-  if (!thread) {
-    return apiError(`No matching thread ${params[0]}`,
+const get_question_replies = (_, params) => {
+  const question = database.questions.find((t) => t.id == params[0]);
+  if (!question) {
+    return apiError(`No matching question ${params[0]}`,
       Status.NotFound,
     );
   }
-  const post = thread.posts[params[1]-1];
+  const reply = question.replies[params[1]-1];
 
-  if(!post) {
-    return apiError( `No matching post ${params[1]} in thread ${params[0]}`, 
+  if(!reply) {
+    return apiError( `No matching reply ${params[1]} in question ${params[0]}`, 
       Status.NotFound,
     );
   }
   
   return {
-    ...post,
-    name: database.users.find((u) => u.username === post.user).name,
+    ...reply,
+    name: database.users.find((u) => u.username === reply.user).name,
   };
   
 };
-get_thread_posts.description = `The first post in each thread has id=1.`;
+get_question_replies.description = `The first reply in each question has id=1.`;
 
-/* Return the indexed posts for a thread with a given id */
-router.get("^/api/threads/(\\d+)/posts/(\\d+)/?$", get_thread_posts);
+/* Return the indexed replies for a question with a given id */
+router.get("^/api/questions/(\\d+)/replies/(\\d+)/?$", get_question_replies);
 
 /* Return all the users */
 router.get("^/api/users/?$", () => database.users);
@@ -156,8 +156,8 @@ router.get("^/api/users/(\\w+)/?$", (_, params) => {
   return user;
 });
 
-/* Return the threads started by a particular user */
-router.get("^/api/users/(\\w+)/threads/?$", (req, params) => {
+/* Return the questions started by a particular user */
+router.get("^/api/users/(\\w+)/questions/?$", (req, params) => {
   const user = database.users.find((u) => u.username == params[0]);
   if (!user) {
     return apiError(`No matching user ${params[0]}`,
@@ -165,15 +165,15 @@ router.get("^/api/users/(\\w+)/threads/?$", (req, params) => {
     );
   }
 
-  const userthreads = database.threads
-    .filter((t) => t.posts[0].user === user.username) // the first post
-    .map(({ posts, ...rest }) => rest); // strip the posts
+  const userquestions = database.questions
+    .filter((t) => t.replies[0].user === user.username) // the first reply
+    .map(({ replies, ...rest }) => rest); // strip the replies
 
-  return userthreads;
+  return userquestions;
 });
 
-/* Create a thread */
-router.post("^/api/threads/?$", (req, params) => {
+/* Create a question */
+router.post("^/api/questions/?$", (req, params) => {
   const user = database.users.find((u) => u.username == req.json.user);
   if (!user) {
     return apiError(`No matching user ${req.json.user}`,
@@ -181,35 +181,35 @@ router.post("^/api/threads/?$", (req, params) => {
     );
   }
 
-  const newthread = {
-    thread_title: req.json.thread_title,
+  const newquestion = {
+    question: req.json.question,
     // Only use the first character
     icon: String.fromCodePoint(("" + (req.json.icon ?? "❓")).codePointAt(0)),
-    id: database.threads.map((t) => t.id).reduce((a, b) => Math.max(a, b)) + 1,
-    posts: [{
+    id: database.questions.map((t) => t.id).reduce((a, b) => Math.max(a, b)) + 1,
+    replies: [{
       text: req.json.text,
       user: req.json.user,
     }],
     user: req.json.user,
   };
-  database.threads.push(newthread);
+  database.questions.push(newquestion);
 
   return {
-    body: newthread,
+    body: newquestion,
     status: Status.Created,
   };
 }, {
   "user": "The username of the user posting.",
-  "thread_title": "The title of the thread. A string.",
+  "question": "The initial question. A string.",
   "icon": "A string character",
-  "text": "The content of the first post. A string.",
+  "text": "The content of the first reply. A string.",
 });
 
-/* Create a post within a thread */
-router.post("^/api/threads/(\\d+)/posts/?$", (req, params) => {
-  const thread = database.threads.find((t) => t.id == params[0]);
-  if (!thread) {
-    return apiError(`No matching thread ${params[0]}`,
+/* Create a reply within a question */
+router.post("^/api/questions/(\\d+)/replies/?$", (req, params) => {
+  const question = database.questions.find((t) => t.id == params[0]);
+  if (!question) {
+    return apiError(`No matching question ${params[0]}`,
       Status.NotFound,
     );
   }
@@ -225,7 +225,7 @@ router.post("^/api/threads/(\\d+)/posts/?$", (req, params) => {
     text: req.json.text,
     user: req.json.user,
   };
-  thread.posts.push(newPost);
+  question.replies.push(newPost);
 
   return {
     body: newPost,
@@ -233,21 +233,21 @@ router.post("^/api/threads/(\\d+)/posts/?$", (req, params) => {
   };
 }, {
   "user": "The username of the user posting.",
-  "text": "The content of the post. A string.",
+  "text": "The content of the reply. A string.",
 });
 
-/* Delete a thread */
-router.delete("^/api/threads/(\\d+)/?$", (req, params) => {
-  const thread = database.threads.find((t) => t.id == params[0]);
-  if (!thread) {
-    return apiError(`No matching thread ${params[0]}`,
+/* Delete a question */
+router.delete("^/api/questions/(\\d+)/?$", (req, params) => {
+  const question = database.questions.find((t) => t.id == params[0]);
+  if (!question) {
+    return apiError(`No matching question ${params[0]}`,
       Status.NotFound,
     );
   }
 
-  if (thread.user === req.json.user) {
-    database.threads = database.threads.filter(
-      (t) => (t.id !== thread.id),
+  if (question.user === req.json.user) {
+    database.questions = database.questions.filter(
+      (t) => (t.id !== question.id),
     );
   }
 
@@ -257,7 +257,7 @@ router.delete("^/api/threads/(\\d+)/?$", (req, params) => {
   };
 }, {
   "user": "The username of the logged-in user. " +
-    "Must match the username of the thread creator",
+    "Must match the username of the question creator",
 });
 
 router.add("OPTIONS", "^", () => "");
