@@ -1,17 +1,13 @@
-import { serve } from "https://deno.land/std@0.90.0/http/server.ts";
 import { serveFile } from "https://deno.land/std@0.90.0/http/file_server.ts";
 import { posix } from "https://deno.land/std@0.90.0/path/mod.ts";
 import { Status } from "https://deno.land/std@0.90.0/http/http_status.ts";
-import {
-  acceptWebSocket,
-  isWebSocketCloseEvent,
-} from "https://deno.land/std@0.90.0/ws/mod.ts";
+
 
 import { getHighlightedJson, getIndexer } from "./index.js";
 
 import { apiError, TinyRouter } from "./router.js";
 
-const version = "20/05";
+const version = "25/05";
 
 /* Load a "database". */
 const databaseJSON = `{
@@ -148,24 +144,24 @@ router.get("^/api/users/(\\w+)/topics/?$", (req, params) => {
 
 /* Create a topic */
 router.post("^/api/topics/?$", (req, params) => {
-  const user = database.users.find((u) => u.username == req.json.user);
+  const user = database.users.find((u) => u.username == req.jsonContent.user);
   if (!user) {
     return apiError(
       {
-        error: `No matching user ${req.json.user}`,
+        error: `No matching user ${req.jsonContent.user}`,
       },
       Status.OK,
     );
   }
 
   const newTopic = {
-    title: req.json.title,
+    title: req.jsonContent.title,
     id: database.topics.map((t) => t.id).reduce((a, b) => Math.max(a, b)) + 1,
     posts: [{
-      text: req.json.text,
-      user: req.json.user,
+      text: req.jsonContent.text,
+      user: req.jsonContent.user,
     }],
-    user: req.json.user,
+    user: req.jsonContent.user,
   };
   database.topics.push(newTopic);
 
@@ -191,19 +187,19 @@ router.post("^/api/topics/(\\d+)/posts/?$", (req, params) => {
     );
   }
 
-  const user = database.users.find((u) => u.username == req.json.user);
+  const user = database.users.find((u) => u.username == req.jsonContent.user);
   if (!user) {
     return apiError(
       {
-        error: `No matching user ${req.json.user}`,
+        error: `No matching user ${req.jsonContent.user}`,
       },
       Status.OK,
     );
   }
 
   const newPost = {
-    text: req.json.text,
-    user: req.json.user,
+    text: req.jsonContent.text,
+    user: req.jsonContent.user,
   };
   topic.posts.push(newPost);
 
@@ -228,7 +224,7 @@ router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
     );
   }
 
-  if (topic.user === req.json.user) {
+  if (topic.user === req.jsonContent.user) {
     database.topics = database.topics.filter(
       (t) => (t.id !== topic.id),
     );
@@ -245,37 +241,34 @@ router.delete("^/api/topics/(\\d+)/?$", (req, params) => {
 
 router.add("OPTIONS", "^", () => "");
 
+/* module globals for managing websockets */
 const wsClients = {};
 let count = 0;
 
 /* WebSocket handler */
 function handleWs(req) {
-  const { conn, r: bufReader, w: bufWriter, headers } = req;
-  acceptWebSocket({
-    conn,
-    bufReader,
-    bufWriter,
-    headers,
-  }).then(async (socket) => {
-    const id = count++;
-    wsClients[id] = socket;
-    try {
-      for await (const ev of socket) {
-        if (isWebSocketCloseEvent(ev)) delete wsClients[id];
-      }
-    } catch (err) {
-      console.error(`WebSocket failed: ${err}`);
-      delete wsClients[id];
 
-      if (!socket.isClosed) {
-        try {
-          await socket.close(1000).catch(console.error);
-        } catch (_) {
-          // do nothing
-        }
-      }
-    }
+  if(req.headers.get("upgrade") !== "websocket") {
+    return apiError(`Cannot connect to /ws without trying to be a websocket upgrade`, Status.NotImplemented);
+  }
+
+  const { socket, response } = Deno.upgradeWebSocket(req);
+  const id = count++;
+
+  socket.addEventListener("open", () => {    
+    wsClients[id] = socket;
   });
+
+  socket.addEventListener("close", () => {
+    delete wsClients[id];
+  });
+
+  socket.addEventListener("error", () => {
+    console.log(`Error in websocket with id ${id}`)
+    delete wsClients[id];
+  });
+
+  return response;
 }
 
 async function postUpdate() {
@@ -311,24 +304,26 @@ router.get("^", async (req, params) => {
 
 async function main() {
   /* Create the server! */
-  const server = serve({
-    port: 7777,
-  });
-  console.log("Connect to http://localhost:7777/");
 
-  /* Handle incoming requests */
-  for await (const req of server) {
-    console.log(`${new Date().toISOString()}\t${req.method}\t${req.url}`);
-    if (req.url === "/ws") {
-      handleWs(req);
-    } else {
-      try {
-        await req.respond(await router.handle(req));
-      } catch (err) {
-        console.error(`Error: ${err.message}`);
+  console.log("Connect to http://localhost:7777/");
+  Deno.serve({
+      port:7777
+    },
+
+    async (req) => {
+      console.log(`${new Date().toISOString()}\t${req.method}\t${req.url}`);
+
+      if ((new URL(req.url)).pathname === "/ws") {
+        return handleWs(req);
+      } else {
+        try {
+          return router.handle(req);
+        } catch (err) {
+          console.error(`Error: ${err.message}`);
+        }
       }
     }
-  }
+  );
 }
 
 /* Adapted from https://deno.land/std@0.90.0/http/file_server.ts */

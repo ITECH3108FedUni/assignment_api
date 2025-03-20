@@ -4,11 +4,39 @@ import { Status } from "https://deno.land/std@0.90.0/http/http_status.ts";
 const decoder = new TextDecoder();
 
 export function apiError(body, status) {
+  const headers = new Headers();
+  addCORS(headers);
+  
+  headers.set('Content-Type', "application/json");
+
+  console.error(body);
+
   return {
-    body: JSON.stringify(body),
+    body: JSON.stringify({error: body}),
     status: status,
-    "content-type": "application/json",
+    headers: headers
   };
+}
+
+function responsify(res) {
+  if(res.status === Status.NoContent) {
+    return new Response(null, {headers: res.headers, status: res.status }); 
+  } else {
+    return new Response(res.body, {headers: res.headers, status: res.status || 200});
+  }
+}
+
+function addCORS(headers) {  
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Max-Age", "86400");
+  headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, PUT, POST, DELETE",
+    );
+  headers.set(
+      "Access-Control-Allow-Headers",
+      "Accept, Authorization, Content-Type, Origin",
+    );
 }
 
 /* A tiny router class.
@@ -73,54 +101,53 @@ export class TinyRouter {
   method and the URL/path match, then it will call the corresponding handler
   */
   async handle(req) {
+    const pathname = (new URL(req.url)).pathname;
+
+    let res;
+
     /* If the client claims to be sending json, then parse it */
-    if (req.headers.get("content-type") == "application/json") {
-      let body = await Deno.readAll(req.body);
+    if (req.method !== "GET" && req.headers.get("content-type") && req.headers.get('content-type').startsWith("application/json")) {
       try {
-        if (body.length) {
-          body = JSON.parse(decoder.decode(body));
-          req.json = body;
-        }
+          req.jsonContent = await req.json();
       } catch (e) {
-        return apiError({
+        return responsify(apiError({
           error: `Malformed JSON in your request. ${e.message}`,
-        }, Status.BadRequest);
+        }, Status.BadRequest));
       }
     }
 
     for (const route of this.routes) {
       if (route.method !== req.method) continue;
 
-      const match = route.re.exec(req.url);
+      const match = route.re.exec(pathname);
 
       if (match) {
         // Check the requiredFields
         if (route.requiredFields) {
           // If the handler requires certain fields, make sure we have json
-          if (!req.json) {
-            return apiError({
+          if (!req.jsonContent) {
+            return responsify(apiError({
               error: `This endpoint requires a JSON-encoded body. ` +
                 `Did you remember to set the content type to application/json?`,
-            }, Status.BadRequest);
+            }, Status.BadRequest));
           }
 
           for (const k in route.requiredFields) {
-            if (!(k in req.json)) {
-              return apiError(
+            if (!(k in req.jsonContent)) {
+              return responsify(apiError(
                 {
                   error: `Missing information required in request: ${k}`,
                 },
                 Status.BadRequest,
-              );
+              ));
             }
           }
         }
 
-        let res;
         try {
           res = await route.action(req, match.slice(1));
         } catch (e) {
-          return apiError(`An error occurred: ${e.message}`, 500);
+          return responsify(apiError(`An error occurred: ${e.message}`, 500));
         }
 
         if (
@@ -162,28 +189,17 @@ export class TinyRouter {
         } else {
           const headers = new Headers();
           const status = 200;
-          res = { "body": res, headers, status };
+          res = { body: res, status: status, headers: headers };
         }
 
         /* Add CORS headers */
-        res.headers.set("Access-Control-Allow-Origin", "*");
-        res.headers.set("Access-Control-Max-Age", "86400");
-        res.headers.set(
-          "Access-Control-Allow-Methods",
-          "GET, PUT, POST, DELETE",
-        );
-        res.headers.set(
-          "Access-Control-Allow-Headers",
-          "Accept, Authorization, Content-Type, Origin",
-        );
+        addCORS(res.headers);
 
-        return res;
+        return responsify(res);
+        
       }
     }
     // No routes matched
-    return apiError(
-      `Couldn't find route for path ${req.url} with method ${req.method}`,
-      500,
-    );
+    return responsify(apiError(`Couldn't find route for path ${pathname} with method ${req.method}`, Status.NotFound));
   }
 }
